@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/container.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:register_talk/login_screen.dart';
+import 'package:register_talk/res_register.dart';
+import 'package:http/http.dart' as http;
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -70,6 +72,51 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  TextEditingController nama = TextEditingController();
+  TextEditingController email = TextEditingController();
+  bool isLoading = false;
+
+  Future<ResRegister?> registerUsers() async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      var res = await http.post(
+          Uri.parse(
+              "http://192.168.1.13:8085/codingtalk_register/register.php"),
+          body: {
+            "name": nama.text,
+            "email": email.text,
+            "password": password.text
+          });
+      ResRegister data = resRegisterFromJson(res.body);
+      if (data.value == 1) {
+        isLoading = false;
+        Navigator.pushAndRemoveUntil(context,
+            MaterialPageRoute(builder: (_) => LoginScreen()), (route) => false);
+      } else if (data.value == 2) {
+        setState(() {
+          isLoading = false;
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(data.message ?? "")));
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(data.message ?? "")));
+        });
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.toString())));
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -103,6 +150,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: Column(
                     children: [
                       TextFormField(
+                        controller: nama,
                         decoration: InputDecoration(
                             border: OutlineInputBorder(
                               borderSide: BorderSide(),
@@ -114,6 +162,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         height: 20,
                       ),
                       TextFormField(
+                        controller: email,
                         decoration: InputDecoration(
                             border: OutlineInputBorder(
                               borderSide: BorderSide(),
@@ -215,10 +264,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           onPressed:
                               minimal8huruf && hurufBesarKecil && minimal1Angka
                                   ? () {
-                                      Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (_) => LoginScreen()));
+                                      registerUsers();
                                     }
                                   : null,
                           child: Container(
